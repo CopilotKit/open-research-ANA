@@ -1,6 +1,5 @@
 import type { Section as TSection } from "@/lib/types";
 import Footer from "@/components/document-footer";
-import { useDebounce } from "@/lib/hooks/useDebounce";
 
 export interface DocumentEditorProps {
     section: TSection;
@@ -13,16 +12,12 @@ export function DocumentEditor({
     zoomLevel,
     onSectionEdit,
 }: DocumentEditorProps) {
-    const handleEdit = useDebounce((editedSectionProps: Partial<TSection>) => {
-        onSectionEdit({ ...section!, ...editedSectionProps })
-    }, 500);
-
-    const {id} = section ?? {};
+    const { id } = section ?? {};
 
     const scalingStyle = {
-            transform: `scale(${zoomLevel / 100})`,
-            transformOrigin: 'top left'
-        }
+        transform: `scale(${zoomLevel / 100})`,
+        transformOrigin: "top left",
+    };
 
     return (
         <div
@@ -34,12 +29,12 @@ export function DocumentEditor({
                 <input
                     type="text"
                     value={section.title}
-                    onChange={(e) => handleEdit({ title: e.target.value })}
+                    onChange={(e) => onSectionEdit({ ...section, title: e.target.value })}
                     className="text-2xl font-semibold text-center mb-4 px-4 py-2 border border-black/10 rounded bg-white/50 focus:outline-none focus:ring-1 focus:ring-black/10"
                 />
                 <textarea
-                    value={section?.content}
-                    onChange={(e) => handleEdit({ content: e.target.value })}
+                    value={section.content}
+                    onChange={(e) => onSectionEdit({ ...section, content: e.target.value })}
                     className="flex-1 w-full font-mono p-4 border border-black/10 rounded bg-white/50 focus:outline-none focus:ring-1 focus:ring-black/10 resize-none"
                 />
                 {section.footer?.length ? <Footer footer={section.footer} /> : null}
