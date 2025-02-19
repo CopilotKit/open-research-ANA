@@ -6,11 +6,10 @@ import json
 from langchain_core.tools import tool
 from pydantic import BaseModel, Field
 from tavily import AsyncTavilyClient
-from typing import TypedDict, List, Annotated, Literal, Dict, Union, Optional
+from typing import List, Dict, Optional
 from langchain_core.runnables import RunnableConfig
 load_dotenv('.env')
 tavily_client = AsyncTavilyClient()
-
 
 # Add Tavily's arguments to enhance the web search tool's capabilities
 class TavilyQuery(BaseModel):

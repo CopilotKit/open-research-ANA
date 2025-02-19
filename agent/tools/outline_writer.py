@@ -7,7 +7,7 @@ from langchain_core.tools import tool
 from pydantic import BaseModel, Field
 from langchain_openai import ChatOpenAI
 
-from copilotkit.langchain import copilotkit_emit_state, copilotkit_customize_config, copilotkit_emit_message
+from copilotkit.langchain import copilotkit_emit_state
 from langchain_core.runnables import RunnableConfig
 
 
@@ -85,8 +85,6 @@ async def outline_writer(research_query, state):
                    f"{sources_summary}\n\n"
                    f"Your Proposal:"
     }]
-
-    # print(f"**In outline tool**:{prompt[:1000]}")
 
     config = RunnableConfig()
     state["logs"] = state.get("logs", [])
