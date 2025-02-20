@@ -5,9 +5,10 @@ from dotenv import load_dotenv
 
 from langchain_core.messages import AIMessage, SystemMessage, HumanMessage, ToolMessage
 from langgraph.graph import StateGraph
-from langgraph.types import Command
+from langgraph.types import Command, interrupt
 from langchain_core.runnables import RunnableConfig
 from copilotkit.langchain import copilotkit_emit_state, copilotkit_customize_config
+from langchain_core.tools import tool
 
 from state import ResearchState
 from config import Config
@@ -20,14 +21,18 @@ load_dotenv('.env')
 
 cfg = Config()
 
+@tool
+def review_proposal(proposal: str) -> str:
+    """
+    Empty tool to route to the human to the process_feedback_node.
+    """
+    pass
+
 class ResearchAgent:
     def __init__(self):
         """
         Initialize the ResearchAgent.
         """
-        if cfg.DEBUG:
-            print("**In __init__**")
-
         self._initialize_tools()
         self._build_workflow()
 
@@ -35,11 +40,8 @@ class ResearchAgent:
         """
         Initialize the available tools and create a name-to-tool mapping.
         """
-        if cfg.DEBUG:
-            print("**In _initialize_tools**")
-
-        self.tools = [tavily_search, tavily_extract, outline_writer, section_writer]
-        self.tools_by_name = {tool.name: tool for tool in self.tools}
+        self.tools = [tavily_search, tavily_extract, outline_writer, section_writer, review_proposal]
+        self.tools_by_name = {tool.name: tool for tool in self.tools} # for easy lookup
 
     def _build_workflow(self):
         """
@@ -49,26 +51,21 @@ class ResearchAgent:
         
         # Add nodes
         workflow.add_node("call_model_node", self.call_model_node)
-        workflow.add_node("tools_node", self.tool_node)
-        workflow.add_node("ask_human_node", self.ask_human_node)
+        workflow.add_node("tool_node", self.tool_node)
         workflow.add_node("process_feedback_node", self.process_feedback_node)
 
         # Define graph structure
         workflow.set_entry_point("call_model_node")
         workflow.set_finish_point("call_model_node")
-        workflow.add_edge("tools_node", "call_model_node")
-        workflow.add_edge("ask_human_node", "process_feedback_node")
+        workflow.add_edge("tool_node", "call_model_node")
         workflow.add_edge("process_feedback_node", "call_model_node")
 
-        self.graph = workflow.compile(interrupt_after=['ask_human_node'])
+        self.graph = workflow.compile()
 
     def _build_system_prompt(self, state: ResearchState) -> str:
         """
         Build the system prompt based on current state.
         """
-        if cfg.DEBUG:
-            print("**In _build_system_prompt**")
-
         outline = state.get("outline", {})
         sections = state.get("sections", [])
         proposal = state.get("proposal", {})
@@ -83,7 +80,7 @@ class ResearchAgent:
             "2. Use the tavily_extract tool to extract additional content from relevant URLs.\n"
             "3. Use the outline_writer tool to analyze the gathered information and organize it into a clear, logical **outline proposal**. Break the content into meaningful sections that will guide the report structure. You must use the outline_writer EVERY time you need to write an outline for the report\n"
             "4. After EVERY time you use the outline_writer tool, YOU MUST use review_proposal tool.\n"
-            f"5. Once **outline proposal** is approved use the section_writer tool to write ONLY the sections of the report based on the **Approved Outline**{':' + str([outline[section]['title'] for section in outline]) if outline else ''} generated from the review_proposal tool. Ensure the report is well-written, properly sourced, and easy to understand. Avoid responding with the text of the report directly, always use the section_writer tool for the final product.\n\n"
+            f"5. After the review_proposal tool is called if any sections are approved, use the section_writer tool to write ONLY the sections of the report based on the **Approved Outline**{':' + str([outline[section]['title'] for section in outline]) if outline else ''} generated from the review_proposal tool. Ensure the report is well-written, properly sourced, and easy to understand. Avoid responding with the text of the report directly, always use the section_writer tool for the final product.\n\n"
             "After using the section_writer tool, actively engage with the user to discuss next steps. **Do not summarize your completed work**, as the user has full access to the research progress.\n"
             "Instead of sharing details like generated outlines or reports, simply confirm the task is ready and ask for feedback or next steps. For example:\n"
             "'I have completed [..MAX additional 5 words]. Would you like me to [..MAX additional 5 words]?'\n\n"
@@ -120,62 +117,60 @@ class ResearchAgent:
 
         return "\n".join(prompt_parts)
 
-    async def call_model_node(self, state: ResearchState, config: RunnableConfig) -> Command[Literal["tools_node", "ask_human_node", "__end__"]]:
+    async def call_model_node(self, state: ResearchState, config: RunnableConfig) -> Command[Literal["tool_node", "__end__"]]:
         """
         Node for calling the model and handling the system prompt, messages, state, and tool bindings.
         """
-        if cfg.DEBUG:
-            print("**In call_model_node**")
-
         # Ensure last message is of correct type
         last_message = state['messages'][-1]
         if not isinstance(last_message, (AIMessage, SystemMessage, HumanMessage, ToolMessage)):
             last_message = HumanMessage(content=last_message.content)
             state['messages'][-1] = last_message
-
-        prompt = self._build_system_prompt(state)
         
         # Call LLM
-        response = await cfg.FACTUAL_LLM.bind_tools(
-            self.tools + state.get("copilotkit", {}).get("actions", []),
-            parallel_tool_calls=False
-        ).ainvoke([
-            SystemMessage(content=prompt),
+        model = cfg.FACTUAL_LLM.bind_tools(self.tools, parallel_tool_calls=False)
+        response = await model.ainvoke([
+            SystemMessage(content=self._build_system_prompt(state)),
             *state["messages"],
         ], config)
 
+
         response = cast(AIMessage, response)
 
-        # Route based on tool calls
+        # If the LLM decided to use a tool, we go to the tool node. Otherwise, we end the graph.
         if response.tool_calls:
-            cpk_actions = state.get("copilotkit", {}).get("actions", [])
-            if any(action.get("name") == tool_call.get("name") for action in cpk_actions 
-                  for tool_call in response.tool_calls):
-                return Command(goto="ask_human_node", update={"messages": response})
-            return Command(goto="tools_node", update={"messages": response})
-
+            return Command(goto="tool_node", update={"messages": response})
         return Command(goto="__end__", update={"messages": response})
 
-    async def tool_node(self, state: ResearchState, config: RunnableConfig):
+    async def tool_node(self, state: ResearchState, config: RunnableConfig) -> Command[Literal["process_feedback_node", "call_model_node"]]:
         """
         Custom asynchronous tool node that can access and update agent state. This is necessary
         because tools cannot access or update state directly.
         """
-        if cfg.DEBUG:
-            print("**In tool_node**")
-
-        config = copilotkit_customize_config(config, emit_messages=False)
+        config = copilotkit_customize_config(config, emit_messages=False) # Disable emitting messages to the frontend since these messages will be intermediate
 
         msgs = []
         tool_state = {}
         for tool_call in state["messages"][-1].tool_calls:
-            tool = self.tools_by_name[tool_call["name"]]
+            if tool_call["name"] == "review_proposal":
+                return Command(goto="process_feedback_node", update={"messages": ToolMessage(tool_call_id=tool_call["id"], content="")})
+        
             # Temporary messages struct that are accessible only to tools.
             state['messages'] = {'HumanMessage' if type(message) == HumanMessage else 'AIMessage' : message.content for message in state['messages']}
-            tool_call["args"]["state"] = state  # update the state so the tool could access the state
-            new_state, tool_msg = await tool.ainvoke(tool_call["args"])
+
+            # Add a state key to the tool call so the tool can access state
+            tool_call["args"]["state"] = state
+            
+            # Manually invoke the tool that the LLM decided to use with the args it provided.
+            # Keep in mind, the state key we added above will be apart of args.
+            tool = self.tools_by_name[tool_call["name"]]
+            new_state, tool_msg = await tool.ainvoke(tool_call["args"]) # new_state will be the result of the tool call
+
+            # Remove the state key since we don't need to commit it into the saved state
             tool_call["args"]["state"] = None
             msgs.append(ToolMessage(content=tool_msg, name=tool_call["name"], tool_call_id=tool_call["id"]))
+
+            # Build the tool state so we can emit it and commit it into the saved state
             tool_state = {
                 "title": new_state.get("title", ""),
                 "outline": new_state.get("outline", {}),
@@ -190,51 +185,26 @@ class ResearchAgent:
 
         return tool_state
 
-
-    @staticmethod
-    def ask_human_node(state: ResearchState):
-        """
-        Define an empty node to ask human for feedback via frontend tools.
-        """
-        if cfg.DEBUG:
-            print("**In ask_human_node** waiting for human feedback from frontend")
-        pass
-
     @staticmethod
     async def process_feedback_node(state: ResearchState, config: RunnableConfig):
         """
-        Node for processing the user's response acquired in the ask_human_node.
+        Node for retrieving and processing feedback from the user via the frontend.
         """
-        if cfg.DEBUG:
-            print("**In process_feedback_node**")
 
-        # Process human feedback from frontend
-        config = copilotkit_customize_config(
-            config,
-            emit_messages=True,  # make sure to enable emitting messages to the frontend
-        )
+        # Interrupt the graph and wait for feedback. CopilotKit will render a form and wait for the user to submit it on
+        # the frontend.
+        reviewed_proposal = interrupt("") 
 
-        last_tool_message = cast(ToolMessage, state["messages"][-1])
-        if cfg.DEBUG:
-            print("**In process_feedback_node** received human feedback:\n",last_tool_message)
+        # Process the feedback we have in reviewed_proposal.
+        if reviewed_proposal.get("approved"):
+            outline = {k: {'title': v['title'], 'description': v['description']} for k, v in
+                        reviewed_proposal.get("sections", {}).items()
+                        if isinstance(v, dict) and v.get('approved')}
 
-        # If the last tool message is 'review proposal', we need to update the proposal
-        if last_tool_message.name == 'review_proposal':
-            reviewed_proposal = json.loads(last_tool_message.content) # proposal will be a json object
-            if reviewed_proposal.get("approved"):
-                # Update outline with approved sections
-                outline = {k: {'title': v['title'], 'description': v['description']} for k, v in
-                           reviewed_proposal.get("sections", {}).items()
-                           if isinstance(v, dict) and v.get('approved')}
+            state['outline'] = outline
 
-                if cfg.DEBUG:
-                    print("**In process_feedback_node** setting outline: {}".format(outline))
-
-                state['outline'] = outline
-
-            # Update proposal
-            state["proposal"] = reviewed_proposal
-
-        return state
+        # Update proposal and commit the state. Add a system message so the LLM knows that this interaction took place.
+        state["proposal"] = reviewed_proposal
+        return Command(goto="call_model_node", update={**state})
 
 graph = ResearchAgent().graph
