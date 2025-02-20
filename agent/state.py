@@ -12,6 +12,5 @@ class ResearchState(CopilotKitState):
     sources: Dict[str, Dict[str, Union[str, float]]]
     tool: str
     logs: List[dict]  # list of dicts logs to be sent to frontend with 'message', 'status'
-    # messages: Annotated[list[AnyMessage], add_messages] (included in CopilotKitState)
 
 
