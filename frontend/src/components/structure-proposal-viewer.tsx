@@ -33,12 +33,12 @@ function ProposalItem({
 }
 
 export function ProposalViewer({
+    proposal,
     onSubmit,
 }: {
+    proposal: Proposal
     onSubmit: (approved: boolean, proposal: Proposal) => void,
 }) {
-    const { state } = useResearch()
-    const proposal = state.proposal
     const [reviewedProposal, setReviewedProposal] = useState(proposal)
 
     const handleCheckboxChange = (

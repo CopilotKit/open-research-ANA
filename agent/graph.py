@@ -7,7 +7,7 @@ from langchain_core.messages import AIMessage, SystemMessage, HumanMessage, Tool
 from langgraph.graph import StateGraph
 from langgraph.types import Command, interrupt
 from langchain_core.runnables import RunnableConfig
-from copilotkit.langchain import copilotkit_emit_state, copilotkit_customize_config
+from copilotkit.langchain import copilotkit_customize_config
 from langchain_core.tools import tool
 
 from state import ResearchState
@@ -79,8 +79,8 @@ class ResearchAgent:
             "1. Use the tavily_search tool to start the research and gather additional information from credible online sources when needed.\n"
             "2. Use the tavily_extract tool to extract additional content from relevant URLs.\n"
             "3. Use the outline_writer tool to analyze the gathered information and organize it into a clear, logical **outline proposal**. Break the content into meaningful sections that will guide the report structure. You must use the outline_writer EVERY time you need to write an outline for the report\n"
-            "4. After EVERY time you use the outline_writer tool, YOU MUST use review_proposal tool.\n"
-            f"5. After the review_proposal tool is called if any sections are approved, use the section_writer tool to write ONLY the sections of the report based on the **Approved Outline**{':' + str([outline[section]['title'] for section in outline]) if outline else ''} generated from the review_proposal tool. Ensure the report is well-written, properly sourced, and easy to understand. Avoid responding with the text of the report directly, always use the section_writer tool for the final product.\n\n"
+            "4. Use the review_proposal tool to review the outline proposal and get feedback from the user.\n"
+            f"5. After the review_proposal tool, MAKE SURE TO USE THE SECTION_WRITER TOOL if there are any approved sections in the **Approved Outline**{':' + str([outline[section]['title'] for section in outline]) if outline else ''} generated from the review_proposal tool. Ensure the report is well-written, properly sourced, and easy to understand. Avoid responding with the text of the report directly, always use the section_writer tool for the final product.\n\n"
             "After using the section_writer tool, actively engage with the user to discuss next steps. **Do not summarize your completed work**, as the user has full access to the research progress.\n"
             "Instead of sharing details like generated outlines or reports, simply confirm the task is ready and ask for feedback or next steps. For example:\n"
             "'I have completed [..MAX additional 5 words]. Would you like me to [..MAX additional 5 words]?'\n\n"
@@ -154,7 +154,7 @@ class ResearchAgent:
         for tool_call in state["messages"][-1].tool_calls:
             if tool_call["name"] == "review_proposal":
                 return Command(goto="process_feedback_node", update={"messages": ToolMessage(tool_call_id=tool_call["id"], content="")})
-        
+
             # Temporary messages struct that are accessible only to tools.
             state['messages'] = {'HumanMessage' if type(message) == HumanMessage else 'AIMessage' : message.content for message in state['messages']}
 
@@ -181,7 +181,6 @@ class ResearchAgent:
                 "tool": new_state.get("tool", {}),
                 "messages": msgs
             }
-            await copilotkit_emit_state(config, tool_state)
 
         return tool_state
 
@@ -191,20 +190,19 @@ class ResearchAgent:
         Node for retrieving and processing feedback from the user via the frontend.
         """
 
-        # Interrupt the graph and wait for feedback. CopilotKit will render a form and wait for the user to submit it on
-        # the frontend.
-        reviewed_proposal = interrupt("") 
+        # Get user feedback about the proposal.
+        reviewed_outline = interrupt(state.get("proposal", {}))
 
         # Process the feedback we have in reviewed_proposal.
-        if reviewed_proposal.get("approved"):
+        if reviewed_outline.get("approved"):
             outline = {k: {'title': v['title'], 'description': v['description']} for k, v in
-                        reviewed_proposal.get("sections", {}).items()
+                        reviewed_outline.get("sections", {}).items()
                         if isinstance(v, dict) and v.get('approved')}
-
             state['outline'] = outline
 
         # Update proposal and commit the state. Add a system message so the LLM knows that this interaction took place.
-        state["proposal"] = reviewed_proposal
-        return Command(goto="call_model_node", update={**state, "messages": [SystemMessage(content=f"Proposal reviewed by user: {reviewed_proposal}")]})
+        state["proposal"] = reviewed_outline
+        state["messages"] = [SystemMessage(content="User has reviewed the proposal, please process their feedback and act accordingly.")]
+        return Command(goto="call_model_node", update={**state})
 
 graph = ResearchAgent().graph

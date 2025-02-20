@@ -1,18 +1,15 @@
 'use client'
 
-import Chat from "@/components/chat";
 import { useEffect, useRef, useState } from "react";
 import { GripVertical } from "lucide-react";
-import { useCoAgentStateRender, useLangGraphInterrupt } from "@copilotkit/react-core";
 
-import { ResearchState } from "@/lib/types";
-import { Progress } from "@/components/progress";
+import { Proposal } from "@/lib/types";
 import SourcesModal from "@/components/resource-modal";
 import { useResearch } from "@/components/research-context";
 import { DocumentsView } from "@/components/documents-view";
 import { useStreamingContent } from '@/lib/hooks/useStreamingContent';
 import { ProposalViewer } from "@/components/structure-proposal-viewer";
-
+import Chat from "@/components/chat";
 const CHAT_MIN_WIDTH = 30;
 const CHAT_MAX_WIDTH = 50;
 
@@ -21,30 +18,6 @@ export default function HomePage() {
     const dividerRef = useRef<HTMLDivElement>(null)
     const containerRef = useRef<HTMLDivElement>(null)
     const { state: researchState, setResearchState } = useResearch()
-
-    // Handle all "logs" - The loading states that show what the agent is doing
-    useCoAgentStateRender<ResearchState>({
-        name: 'agent',
-        render: ({ state }) => {
-            if (state.logs?.length > 0) {
-                return <Progress logs={state.logs} />;
-            }
-            return null;
-        },
-    }, [researchState]);
-
-    useLangGraphInterrupt({
-        render: ({ resolve }) => {
-            return <ProposalViewer
-                onSubmit={(approved, proposal) => resolve(
-                    JSON.stringify({
-                        ...proposal,
-                        approved,
-                    })
-                )}
-            />
-        }
-    })
 
     const streamingSection = useStreamingContent(researchState);
 

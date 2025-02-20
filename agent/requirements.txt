@@ -10,4 +10,4 @@ pydantic
 python-dotenv
 json5
 copilotkit==0.1.38
-langgraph-cli
+langgraph-cli==0.1.71

@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useState, ReactNode, useEffect } from 'react'
 import type { ResearchState } from '@/lib/types'
-import { useCoAgent } from "@copilotkit/react-core";
 import useLocalStorage from "@/lib/hooks/useLocalStorage";
 
 interface ResearchContextType {
@@ -17,32 +16,28 @@ const ResearchContext = createContext<ResearchContextType | undefined>(undefined
 
 export function ResearchProvider({ children }: { children: ReactNode }) {
     const [sourcesModalOpen, setSourcesModalOpen] = useState<boolean>(false)
-    const { state: coAgentState, setState: setCoAgentsState, run } = useCoAgent<ResearchState>({
-        name: 'agent',
-        initialState: {},
-    });
+    const [state, setState] = useState<ResearchState>({} as ResearchState)
     // @ts-expect-error -- force null
     const [localStorageState, setLocalStorageState] = useLocalStorage<ResearchState>('research', null);
 
     useEffect(() => {
-        const coAgentsStateEmpty = Object.keys(coAgentState).length < 1
         const localStorageStateEmpty = localStorageState == null || Object.keys(localStorageState).length < 1
-        if (!localStorageStateEmpty && coAgentsStateEmpty) {
-            setCoAgentsState(localStorageState)
+        if (!localStorageStateEmpty && !state) {
+            setState(localStorageState)
             return;
         }
-        if (!coAgentsStateEmpty && localStorageStateEmpty) {
-            setLocalStorageState(coAgentState)
+        if (!state && localStorageStateEmpty) {
+            setLocalStorageState(state)
             return;
         }
-        if (!localStorageStateEmpty && !coAgentsStateEmpty && JSON.stringify(localStorageState) !== JSON.stringify(coAgentState)) {
-            setLocalStorageState(coAgentState)
+        if (!localStorageStateEmpty && !state && JSON.stringify(localStorageState) !== JSON.stringify(state)) {
+            setLocalStorageState(state)
             return;
         }
-    }, [coAgentState, localStorageState, setCoAgentsState, setLocalStorageState]);
+    }, [state, localStorageState, setLocalStorageState]);
 
     return (
-        <ResearchContext.Provider value={{ state: coAgentState, setResearchState: setCoAgentsState as ResearchContextType['setResearchState'], setSourcesModalOpen, sourcesModalOpen, runAgent: run }}>
+        <ResearchContext.Provider value={{ state, setResearchState: setState as ResearchContextType['setResearchState'], setSourcesModalOpen, sourcesModalOpen, runAgent: () => {} }}>
             {children}
         </ResearchContext.Provider>
     )

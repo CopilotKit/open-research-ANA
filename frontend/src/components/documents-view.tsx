@@ -5,7 +5,7 @@ import { DocumentsScrollbar } from "@/components/documents-scrollbar";
 import { DocumentViewer } from "@/components/document-viewer";
 import { useResearch } from "@/components/research-context";
 import { DocumentOptionsState } from "@/types/document-options-state";
-import { useCopilotChat } from "@copilotkit/react-core";
+// import { useCopilotChat } from "@copilotkit/react-core";
 import { cn } from "@/lib/utils";
 
 interface DocumentsViewProps {
@@ -17,7 +17,7 @@ interface DocumentsViewProps {
 
 export function DocumentsView({ sections: sectionsArg, selectedSection, onSelectSection, streamingSection }: DocumentsViewProps) {
     const { state, setResearchState } = useResearch()
-    const { isLoading: running } = useCopilotChat()
+    const running = false
     const [documentOptionsState, setDocumentOptionsState] = useState<DocumentOptionsState>({ mode: 'full', editMode: false })
 
     const handleSectionEdit = useCallback((editedSection: Section) => {
