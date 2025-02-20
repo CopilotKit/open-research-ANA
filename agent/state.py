@@ -1,9 +1,7 @@
-from langchain_core.messages import AnyMessage
-from langgraph.graph import add_messages
-from typing import TypedDict, Dict, Union, List, Annotated
-from copilotkit import CopilotKitState # extends MessagesState
+from typing import Dict, Union, List
+from langgraph.graph import MessagesState
 
-class ResearchState(CopilotKitState):
+class ResearchState(MessagesState):
     title: str
     proposal: Dict[str, Union[str, bool, Dict[str, Union[str, bool]]]]  # Stores proposed structure before user approval
     outline: dict

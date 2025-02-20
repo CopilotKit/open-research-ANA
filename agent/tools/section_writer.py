@@ -8,7 +8,7 @@ from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 import random
 import string
-from copilotkit.langchain import copilotkit_customize_config, copilotkit_emit_state
+from copilotkit.langchain import copilotkit_emit_state
 
 @tool
 def WriteSection(title: str, content: str, section_number: int, footer: str = ""): # pylint: disable=invalid-name,unused-argument
@@ -46,23 +46,16 @@ async def section_writer(research_query, section_title, idx, state):
         "id": section_id,
     }
 
-    stream_states = {
-        "content": {
-            "state_key": f"section_stream.content.{idx}.{section_id}.{section_title}",
-            "tool": "WriteSection",
-            "tool_argument": "content"
-        },
-        "footer": {
-            "state_key": f"section_stream.footer.{idx}.{section_id}.{section_title}",
-            "tool": "WriteSection",
-            "tool_argument": "footer"
-        }
+    content_state = {
+        "state_key": f"section_stream.content.{idx}.{section_id}.{section_title}",
+        "tool": "WriteSection",
+        "tool_argument": "content"
     }
-
-    modified_config = copilotkit_customize_config(
-        config,
-        emit_intermediate_state=list(stream_states.values())
-    )
+    footer_state = {
+        "state_key": f"section_stream.footer.{idx}.{section_id}.{section_title}",
+        "tool": "WriteSection",
+        "tool_argument": "footer"
+    }
 
     outline = state.get("outline", {})
     sources = state.get("sources").values()
@@ -153,7 +146,7 @@ async def section_writer(research_query, section_title, idx, state):
 
         # Invoke OpenAI's model with tool
         model = ChatOpenAI(model="gpt-4o-mini", max_retries=1)
-        response = await model.bind_tools([WriteSection]).ainvoke(lc_messages, modified_config)
+        response = await model.bind_tools([WriteSection]).ainvoke(lc_messages, config)
 
         state["logs"][-1]["done"] = True
         await copilotkit_emit_state(config, state)
@@ -171,6 +164,10 @@ async def section_writer(research_query, section_title, idx, state):
             state["sections"].append(section)
 
         # Process each stream state
+        stream_states = {
+            "content": content_state,
+            "footer": footer_state
+        }
         for stream_type, stream_info in stream_states.items():
             if stream_info["state_key"] in state:
                 state[stream_info["state_key"]] = None
