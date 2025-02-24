@@ -46,22 +46,20 @@ async def section_writer(research_query, section_title, idx, state):
         "id": section_id,
     }
 
-    stream_states = {
-        "content": {
-            "state_key": f"section_stream.content.{idx}.{section_id}.{section_title}",
-            "tool": "WriteSection",
-            "tool_argument": "content"
-        },
-        "footer": {
-            "state_key": f"section_stream.footer.{idx}.{section_id}.{section_title}",
-            "tool": "WriteSection",
-            "tool_argument": "footer"
-        }
+    content_state = {
+        "state_key": f"section_stream.content.{idx}.{section_id}.{section_title}",
+        "tool": "WriteSection",
+        "tool_argument": "content"
+    }
+    footer_state = {
+        "state_key": f"section_stream.footer.{idx}.{section_id}.{section_title}",
+        "tool": "WriteSection",
+        "tool_argument": "footer"
     }
 
     config = copilotkit_customize_config(
         config,
-        emit_intermediate_state=list(stream_states.values())
+        emit_intermediate_state=[content_state, footer_state]
     )
 
     outline = state.get("outline", {})
@@ -171,6 +169,11 @@ async def section_writer(research_query, section_title, idx, state):
             state["sections"].append(section)
 
         # Process each stream state
+        stream_states = {
+            "content": content_state,
+            "footer": footer_state
+        }
+
         for stream_type, stream_info in stream_states.items():
             if stream_info["state_key"] in state:
                 state[stream_info["state_key"]] = None
