@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { GripVertical } from "lucide-react";
 import { useCoAgentStateRender, useLangGraphInterrupt } from "@copilotkit/react-core";
 
-import { ResearchState } from "@/lib/types";
+import { Proposal, ResearchState } from "@/lib/types";
 import { Progress } from "@/components/progress";
 import SourcesModal from "@/components/resource-modal";
 import { useResearch } from "@/components/research-context";
@@ -34,8 +34,9 @@ export default function HomePage() {
     }, [researchState]);
 
     useLangGraphInterrupt({
-        render: ({ resolve }) => {
+        render: ({ resolve, event }) => {
             return <ProposalViewer
+                proposal={event.value as any as Proposal}
                 onSubmit={(approved, proposal) => resolve(
                     JSON.stringify({
                         ...proposal,

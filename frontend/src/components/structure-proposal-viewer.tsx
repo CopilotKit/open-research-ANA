@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Proposal, ProposalSection, ProposalSectionName } from "@/lib/types";
-import { useResearch } from "@/components/research-context";
 import { Textarea } from "@/components/ui/textarea";
 
 function ProposalItem({
@@ -33,12 +32,12 @@ function ProposalItem({
 }
 
 export function ProposalViewer({
+    proposal,
     onSubmit,
 }: {
+    proposal: Proposal
     onSubmit: (approved: boolean, proposal: Proposal) => void,
 }) {
-    const { state } = useResearch()
-    const proposal = state.proposal
     const [reviewedProposal, setReviewedProposal] = useState(proposal)
 
     const handleCheckboxChange = (

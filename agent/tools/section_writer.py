@@ -59,7 +59,7 @@ async def section_writer(research_query, section_title, idx, state):
         }
     }
 
-    modified_config = copilotkit_customize_config(
+    config = copilotkit_customize_config(
         config,
         emit_intermediate_state=list(stream_states.values())
     )
@@ -153,7 +153,7 @@ async def section_writer(research_query, section_title, idx, state):
 
         # Invoke OpenAI's model with tool
         model = ChatOpenAI(model="gpt-4o-mini", max_retries=1)
-        response = await model.bind_tools([WriteSection]).ainvoke(lc_messages, modified_config)
+        response = await model.bind_tools([WriteSection]).ainvoke(lc_messages, config)
 
         state["logs"][-1]["done"] = True
         await copilotkit_emit_state(config, state)
