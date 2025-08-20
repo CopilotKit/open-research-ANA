@@ -12,3 +12,6 @@ json5
 copilotkit==0.1.39
 langgraph-cli==0.1.71
 requests
+
+fastapi
+uvicorn
