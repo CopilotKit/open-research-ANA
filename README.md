@@ -78,12 +78,26 @@ pnpm run dev
 
 ## Aggiornamenti accoppiati CopilotKit
 
-Quando si aggiorna 'copilotkit' (backend SDK) è obbligatorio:
+### Sincronizzazione automatica (Renovate)
+
+Renovate Bot monitora automaticamente le versioni di CopilotKit e crea PR di sincronizzazione:
+- **Frequenza**: controllo ogni weekend
+- **Pacchetti monitorati**: `copilotkit` (backend), `@copilotkit/runtime`, `@copilotkit/react-core`, `@copilotkit/react-ui` (frontend)
+- **Comportamento**: tutti i pacchetti CopilotKit vengono aggiornati insieme nella stessa PR
+- **Etichette automatiche**: `copilotkit`, `auto-sync`
+
+Le PR automatiche di Renovate sono etichettate con 🔄 e includono informazioni dettagliate sulle versioni aggiornate.
+
+### Aggiornamenti manuali
+
+Quando si aggiorna 'copilotkit' (backend SDK) manualmente è obbligatorio:
 - verificare la versione compatibile del pacchetto frontend '@copilotkit/runtime';
 - includere nella stessa PR eventuale bump del runtime oppure motivare chiaramente perché non è necessario;
 - segnalare possibili breaking changes in caso di salti di versione pre-1.0.
 
-Qodo Merge applica regole automatiche:
+### Controlli automatici (Qodo Merge)
+
+Qodo Merge applica regole automatiche a tutte le PR (manuali e automatiche):
 - Suggerimenti AI guidati da extra_instructions per evitare mismatch di versioni.
 - Review: controllo aderenza al ticket e individuazione di contenuti extra non previsti.
 - Compliance: checklist "Allineamento versioni CopilotKit" con label automatiche in caso di mancata conformità (es. "Failed compliance check").
