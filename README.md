@@ -75,3 +75,19 @@ pnpm run dev
 ## Documentation 📚
 - [CopilotKit Docs](https://docs.copilotkit.ai/coagents)
 - [LangGraph Platform Docs](https://langchain-ai.github.io/langgraph/cloud/deployment/cloud/)
+
+## Aggiornamenti accoppiati CopilotKit
+
+Quando si aggiorna 'copilotkit' (backend SDK) è obbligatorio:
+- verificare la versione compatibile del pacchetto frontend '@copilotkit/runtime';
+- includere nella stessa PR eventuale bump del runtime oppure motivare chiaramente perché non è necessario;
+- segnalare possibili breaking changes in caso di salti di versione pre-1.0.
+
+Qodo Merge applica regole automatiche:
+- Suggerimenti AI guidati da extra_instructions per evitare mismatch di versioni.
+- Review: controllo aderenza al ticket e individuazione di contenuti extra non previsti.
+- Compliance: checklist "Allineamento versioni CopilotKit" con label automatiche in caso di mancata conformità (es. "Failed compliance check").
+
+Note operative:
+- Per bloccare merge su non conformità, abilita in CI il blocco su label (es. "Failed compliance check").
+- La richiesta di "verifica su Reddit o fonti esterne" non è automatizzabile dal bot; se necessario, aggiungere riferimenti in descrizione PR.

@@ -1,0 +1,20 @@
+# Attiva suggerimenti più mirati agli update accoppiati
+[pr_code_suggestions]
+extra_instructions = """\
+- Verifica sempre la compatibilità tra le versioni di 'copilotkit' (backend SDK) e '@copilotkit/runtime' (frontend).
+- Se viene aggiornato 'copilotkit', proponi nella stessa PR l'aggiornamento di '@copilotkit/runtime' alla versione compatibile, oppure spiega chiaramente perché non è necessario.
+- Evidenzia i possibili breaking changes nei salti di versione pre-1.0 e suggerisci bump coordinati.
+- Evita di proporre dipendenze con versioni non allineate tra frontend e backend (blocca suggerimenti che introducono mismatch).
+"""
+# facoltativo: copertura più ampia quando la PR tocca dipendenze
+suggestions_depth = "exhaustive"
+
+[pr_reviewer]
+# Verifica aderenza al ticket e contenuti "extra" non coperti dal ticket
+require_ticket_analysis_review = true
+check_pr_additional_content = true
+
+[pr_compliance]
+# Mostra sezione ticket e abilita label di non conformità
+enable_ticket_section = true
+enable_user_defined_compliance_labels = true

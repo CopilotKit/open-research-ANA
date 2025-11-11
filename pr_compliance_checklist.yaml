@@ -1,0 +1,6 @@
+pr_compliances:
+  - title: "Allineamento versioni CopilotKit"
+    compliance_label: true
+    objective: "Evitare incompatibilità tra SDK backend e runtime frontend di CopilotKit"
+    success_criteria: "Quando 'copilotkit' viene aggiornato, '@copilotkit/runtime' è aggiornato a una versione dichiarata compatibile (oppure è documentata in modo esplicito la non necessità)"
+    failure_criteria: "La PR aggiorna 'copilotkit' senza verificare/aggiornare '@copilotkit/runtime' o mantiene range/versioni potenzialmente incompatibili"
