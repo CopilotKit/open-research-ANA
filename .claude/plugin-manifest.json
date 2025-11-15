@@ -1,0 +1,156 @@
+{
+  "name": "copilotkit-expert",
+  "version": "1.0.0",
+  "description": "CopilotKit Expert Plugin - Specialized agent for CopilotKit, AG-UI, and AI framework integrations",
+  "author": "BLOG-CANVAS-COPILOTkit Team",
+  "license": "MIT",
+  "compatibleWith": {
+    "claudeCode": "latest",
+    "copilotkit": ">=1.5.20",
+    "langraph": ">=0.1.0",
+    "langchain": ">=0.1.0"
+  },
+  "components": {
+    "skills": [
+      {
+        "name": "copilotkit-expert",
+        "file": "skills/copilotkit-expert.md",
+        "description": "Main expert agent with deep CopilotKit knowledge",
+        "tags": [
+          "copilotkit",
+          "ag-ui",
+          "langgraph",
+          "langchain",
+          "anthropic",
+          "openai",
+          "ai-frameworks"
+        ]
+      }
+    ],
+    "commands": [
+      {
+        "name": "copilotkit-docs",
+        "file": "commands/copilotkit-docs.md",
+        "description": "Search and fetch CopilotKit documentation using VIBE CODING MCP",
+        "usage": "/copilotkit-docs"
+      },
+      {
+        "name": "copilotkit-integrate",
+        "file": "commands/copilotkit-integrate.md",
+        "description": "Guide for integrating CopilotKit features into the project",
+        "usage": "/copilotkit-integrate"
+      },
+      {
+        "name": "copilotkit-debug",
+        "file": "commands/copilotkit-debug.md",
+        "description": "Debug CopilotKit integration issues (state sync, streaming, interrupts)",
+        "usage": "/copilotkit-debug"
+      }
+    ],
+    "documentation": [
+      {
+        "name": "Plugin Documentation",
+        "file": "COPILOTKIT_PLUGIN.md",
+        "type": "main"
+      },
+      {
+        "name": "Quick Start Guide",
+        "file": "QUICKSTART.md",
+        "type": "tutorial"
+      },
+      {
+        "name": "Patterns & Best Practices",
+        "file": "copilotkit-patterns.md",
+        "type": "reference"
+      },
+      {
+        "name": "MCP Setup Guide",
+        "file": "MCP_SETUP.md",
+        "type": "setup"
+      }
+    ]
+  },
+  "mcpServers": [
+    {
+      "name": "copilotkit-mcp",
+      "url": "https://mcp.copilotkit.ai/sse",
+      "transport": "sse",
+      "description": "CopilotKit VIBE CODING MCP - Official documentation server",
+      "required": false,
+      "setupCommand": "claude mcp add --transport sse copilotkit-mcp https://mcp.copilotkit.ai/sse"
+    }
+  ],
+  "features": [
+    "Expert knowledge of CopilotKit framework (v1.5.20+)",
+    "AG-UI integration patterns",
+    "LangGraph orchestration guidance",
+    "LangChain integration examples",
+    "Anthropic Claude SDK patterns",
+    "OpenAI integration",
+    "Human-in-the-loop workflows",
+    "State management and synchronization",
+    "Streaming content patterns",
+    "Real-time documentation access via MCP",
+    "Complete code examples",
+    "Debugging assistance",
+    "Performance optimization tips"
+  ],
+  "installation": {
+    "methods": [
+      {
+        "name": "Copy Files",
+        "command": "cp -r .claude/skills/copilotkit-expert.md /path/to/repo/.claude/skills/ && cp .claude/commands/copilotkit-*.md /path/to/repo/.claude/commands/ && cp .claude/copilotkit-patterns.md /path/to/repo/.claude/"
+      },
+      {
+        "name": "Use Installer",
+        "command": ".claude/install-plugin.sh install /path/to/repo"
+      },
+      {
+        "name": "Export Package",
+        "command": ".claude/install-plugin.sh export /output/dir"
+      }
+    ],
+    "postInstall": [
+      "Configure VIBE CODING MCP: claude mcp add --transport sse copilotkit-mcp https://mcp.copilotkit.ai/sse",
+      "Read quickstart guide: .claude/QUICKSTART.md",
+      "Try a command: /copilotkit-docs"
+    ]
+  },
+  "usage": {
+    "activation": "Automatic when asking CopilotKit-related questions",
+    "commands": [
+      "/copilotkit-docs - Search documentation",
+      "/copilotkit-integrate - Integration guide",
+      "/copilotkit-debug - Debug issues"
+    ],
+    "examples": [
+      "How do I implement human-in-the-loop with CopilotKit?",
+      "Show me a complete CoAgent example with streaming",
+      "Debug: My state isn't syncing to the frontend",
+      "How do I integrate AG-UI with Pydantic models?"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alchimie-di-circe/BLOG-CANVAS-COPILOTkit",
+    "directory": ".claude"
+  },
+  "keywords": [
+    "claude-code",
+    "copilotkit",
+    "ag-ui",
+    "langgraph",
+    "langchain",
+    "anthropic",
+    "openai",
+    "ai-agents",
+    "coagents",
+    "mcp",
+    "plugin"
+  ],
+  "support": {
+    "documentation": "https://docs.copilotkit.ai/",
+    "discord": "https://discord.gg/copilotkit",
+    "issues": "https://github.com/CopilotKit/CopilotKit/issues"
+  }
+}

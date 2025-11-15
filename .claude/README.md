@@ -7,12 +7,18 @@ This directory contains Claude Code customizations for the BLOG-CANVAS-COPILOTki
 ```
 .claude/
 ├── commands/           # Custom slash commands
-│   ├── start-dev.md       # Start full dev environment
-│   ├── check-health.md    # Health check all services
-│   ├── add-feature.md     # Feature addition guide
-│   ├── debug-agent.md     # Agent debugging workflow
-│   └── update-deps.md     # Dependency update guide
-├── skills/            # Custom skills (empty for now)
+│   ├── start-dev.md           # Start full dev environment
+│   ├── check-health.md        # Health check all services
+│   ├── add-feature.md         # Feature addition guide
+│   ├── debug-agent.md         # Agent debugging workflow
+│   ├── update-deps.md         # Dependency update guide
+│   ├── copilotkit-docs.md     # CopilotKit documentation search
+│   ├── copilotkit-integrate.md # CopilotKit integration guide
+│   └── copilotkit-debug.md    # CopilotKit debugging helper
+├── skills/             # Custom skills
+│   └── copilotkit-expert.md   # CopilotKit Expert Agent
+├── copilotkit-patterns.md # CopilotKit patterns & best practices
+├── COPILOTKIT_PLUGIN.md   # CopilotKit plugin documentation
 └── README.md          # This file
 ```
 
@@ -65,6 +71,74 @@ Safely update project dependencies:
 
 **Usage**: `/update-deps`
 
+### `/copilotkit-docs`
+Search and fetch CopilotKit documentation using VIBE CODING MCP:
+- Search official docs
+- Get code examples
+- Access latest API references
+- Version-specific guidance
+
+**Usage**: `/copilotkit-docs` then specify what to search for
+
+### `/copilotkit-integrate`
+Guide for integrating CopilotKit features:
+- Plans frontend/backend integration
+- Provides implementation checklist
+- Shows code examples
+- Tests integration
+
+**Usage**: `/copilotkit-integrate` then describe the feature
+
+### `/copilotkit-debug`
+Debug CopilotKit integration issues:
+- State synchronization problems
+- Streaming content issues
+- Interrupt/approval workflows
+- Type mismatches
+- Performance issues
+
+**Usage**: `/copilotkit-debug` then describe the issue
+
+## Available Skills
+
+### `copilotkit-expert`
+Specialized AI agent expert in CopilotKit framework:
+- Deep knowledge of CoAgents, AG-UI, and integrations
+- Supports LangGraph, LangChain, Anthropic SDK, OpenAI
+- Provides complete working examples
+- Debugging and optimization guidance
+- Access to VIBE CODING MCP for real-time docs
+
+**Activation**: The skill activates automatically when CopilotKit topics are discussed, or request it explicitly.
+
+**See**: [COPILOTKIT_PLUGIN.md](./COPILOTKIT_PLUGIN.md) for full documentation
+
+## 🚀 CopilotKit Plugin
+
+This project includes a comprehensive **CopilotKit Expert Plugin** that provides:
+- **Expert Agent**: Specialized in CopilotKit, AG-UI, and AI frameworks
+- **MCP Integration**: Real-time access to official CopilotKit docs
+- **Slash Commands**: Quick access to docs, integration, and debugging
+- **Patterns Guide**: Complete reference of best practices
+
+### Quick Start with CopilotKit Plugin
+
+1. **Use Slash Commands**:
+   ```
+   /copilotkit-docs
+   /copilotkit-integrate
+   /copilotkit-debug
+   ```
+
+2. **Activate Expert Agent**: Just ask CopilotKit questions
+   ```
+   "How do I implement human-in-the-loop with CopilotKit?"
+   ```
+
+3. **Reference Patterns**: Check `copilotkit-patterns.md` for examples
+
+**Full Plugin Documentation**: [COPILOTKIT_PLUGIN.md](./COPILOTKIT_PLUGIN.md)
+
 ## Creating Custom Commands
 
 To create a new slash command:
@@ -116,6 +190,14 @@ For best results:
 
 ## Resources
 
-- [Claude Code Documentation](https://docs.claude.com/en/docs/claude-code)
+### Project Documentation
 - [Project README](../README.md)
-- [Project Documentation](../CLAUDE.md)
+- [Project Documentation (CLAUDE.md)](../CLAUDE.md)
+- [CopilotKit Plugin Documentation](./COPILOTKIT_PLUGIN.md)
+- [CopilotKit Patterns & Best Practices](./copilotkit-patterns.md)
+
+### Official Documentation
+- [Claude Code Documentation](https://docs.claude.com/en/docs/claude-code)
+- [CopilotKit Docs](https://docs.copilotkit.ai/)
+- [LangGraph Docs](https://langchain-ai.github.io/langgraph/)
+- [Anthropic Claude Docs](https://docs.anthropic.com/)
