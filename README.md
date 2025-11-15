@@ -75,3 +75,33 @@ pnpm run dev
 ## Documentation 📚
 - [CopilotKit Docs](https://docs.copilotkit.ai/coagents)
 - [LangGraph Platform Docs](https://langchain-ai.github.io/langgraph/cloud/deployment/cloud/)
+
+## Aggiornamenti accoppiati CopilotKit
+
+### Sincronizzazione automatica (Renovate)
+
+Renovate Bot monitora automaticamente le versioni di CopilotKit e crea PR di sincronizzazione:
+- **Frequenza**: controllo ogni weekend
+- **Pacchetti monitorati**: `copilotkit` (backend), `@copilotkit/runtime`, `@copilotkit/react-core`, `@copilotkit/react-ui` (frontend)
+- **Comportamento**: tutti i pacchetti CopilotKit vengono aggiornati insieme nella stessa PR
+- **Etichette automatiche**: `copilotkit`, `auto-sync`
+
+Le PR automatiche di Renovate sono etichettate con 🔄 e includono informazioni dettagliate sulle versioni aggiornate.
+
+### Aggiornamenti manuali
+
+Quando si aggiorna 'copilotkit' (backend SDK) manualmente è obbligatorio:
+- verificare la versione compatibile del pacchetto frontend '@copilotkit/runtime';
+- includere nella stessa PR eventuale bump del runtime oppure motivare chiaramente perché non è necessario;
+- segnalare possibili breaking changes in caso di salti di versione pre-1.0.
+
+### Controlli automatici (Qodo Merge)
+
+Qodo Merge applica regole automatiche a tutte le PR (manuali e automatiche):
+- Suggerimenti AI guidati da extra_instructions per evitare mismatch di versioni.
+- Review: controllo aderenza al ticket e individuazione di contenuti extra non previsti.
+- Compliance: checklist "Allineamento versioni CopilotKit" con label automatiche in caso di mancata conformità (es. "Failed compliance check").
+
+Note operative:
+- Per bloccare merge su non conformità, abilita in CI il blocco su label (es. "Failed compliance check").
+- La richiesta di "verifica su Reddit o fonti esterne" non è automatizzabile dal bot; se necessario, aggiungere riferimenti in descrizione PR.

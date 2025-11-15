@@ -1,51 +1,58 @@
-export interface Section { title: string; content: string; idx: number; footer?: string; id: string }
-// export interface Section { title: string; content: string; idx: number; footnotes?: string; id: string }
+// AG-UI Migration: Types now match Pydantic models exactly for proper schema generation
 
+export interface Section {
+    idx: number;
+    title: string;
+    content: string;
+    footer: string;
+}
 
 export interface Source {
-    content: string;
-    published_date: string;
-    score: number;
-    title: string;
     url: string;
+    title: string;
+    score: number;
+    // Legacy fields for backward compatibility
+    content?: string;
+    published_date?: string;
 }
 export type Sources = Record<string, Source>
 
 export interface Log {
     message: string;
-    done: boolean;
+    status: string;
 }
 
 export interface ProposalSection {
     title: string;
-    description: string
-    approved: boolean
+    description: string;
+    approved: boolean;
 }
 
+// AG-UI compatible: Direct mapping to backend Proposal model
+export interface Proposal {
+    sections: Record<string, ProposalSection>;
+    remarks: string | null;
+    approved: boolean;
+}
+
+// Legacy enum for backward compatibility
 export enum ProposalSectionName {
     Sections = "sections",
 }
 
 export type IProposalItem = Record<string, ProposalSection>
 
-export interface Proposal {
-    [ProposalSectionName.Sections]: IProposalItem
-    timestamp: string
-    approved: boolean
-    remarks?: string,
-}
-
-// This interface corresponds to the state defined in agent/state.py
+// AG-UI Migration: This interface corresponds exactly to agent/state.py ResearchState
 export interface ResearchState {
     title: string;
-    outline: Record<string, unknown>;
-    proposal: Proposal;
-    // structure: Record<string, unknown>;
-    sections: Section[]; // Array of objects with 'title', 'content', and 'idx'
-    sources: Sources; // Dictionary with string keys and nested dictionaries
+    proposal: Proposal | null;
+    outline: Record<string, Record<string, string>>;
+    sections: Section[];
+    footnotes: string;
+    sources: Sources;
     tool: string;
-    messages: { [key: string]: unknown }[]; // Array of AnyMessage objects with potential additional properties
     logs: Log[];
+    messages: { [key: string]: unknown }[];
 }
 
 // export type Document = Pick<ResearchState, 'sections' | 'title' | 'intro' | 'outline' | 'conclusion' | 'cited_sources'>
