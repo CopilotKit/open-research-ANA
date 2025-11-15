@@ -1,0 +1,35 @@
+{
+  "name": "copilotkit-expert",
+  "version": "1.0.0",
+  "description": "CopilotKit Expert Plugin - Specialized agent for CopilotKit, AG-UI, and AI framework integrations",
+  "author": {
+    "name": "BLOG-CANVAS-COPILOTkit Team"
+  },
+  "license": "MIT",
+  "engines": {
+    "claudeCode": ">=1.0.0"
+  },
+  "dependencies": {
+    "copilotkit": ">=1.5.20",
+    "langraph": ">=0.1.0",
+    "langchain": ">=0.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alchimie-di-circe/BLOG-CANVAS-COPILOTkit",
+    "directory": ".claude"
+  },
+  "keywords": [
+    "claude-code",
+    "copilotkit",
+    "ag-ui",
+    "langgraph",
+    "langchain",
+    "anthropic",
+    "openai",
+    "ai-agents",
+    "coagents",
+    "mcp",
+    "plugin"
+  ]
+}
