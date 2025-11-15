@@ -1,31 +1,29 @@
 "use client"
 
+// AG-UI Migration: Updated to work with new Proposal structure from Pydantic models
+
 import { useCallback, useState } from "react"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Proposal, ProposalSection, ProposalSectionName } from "@/lib/types";
+import { Proposal, ProposalSection } from "@/lib/types";
 import { Textarea } from "@/components/ui/textarea";
 
 function ProposalItem({
-    proposalItemKey,
     proposal,
     renderSection,
     title,
 }: {
     proposal: Proposal
-    proposalItemKey: ProposalSectionName,
-    renderSection: (name: ProposalSectionName, title: string, section: ProposalSection) => React.ReactNode
+    renderSection: (sectionKey: string, section: ProposalSection) => React.ReactNode
     title: string
 }) {
-    const proposalItem = proposal[proposalItemKey]
-
     return (
         <div>
             <h3 className="text-lg font-semibold">{title}</h3>
-            {Object.entries(proposalItem).map(([key, section]) =>
-                typeof section === 'string' ? null : renderSection(proposalItemKey, key, section)
+            {Object.entries(proposal.sections).map(([key, section]) =>
+                renderSection(key, section)
             )}
         </div>
     )
@@ -41,45 +39,48 @@ export function ProposalViewer({
     const [reviewedProposal, setReviewedProposal] = useState(proposal)
 
     const handleCheckboxChange = (
-        sectionType: ProposalSectionName,
         sectionKey: string,
         checked: boolean
     ) => {
-        setReviewedProposal((prev) => {
-            const newStructure = {...prev}
-            newStructure[sectionType][sectionKey].approved = checked
-            return newStructure
-        })
+        setReviewedProposal((prev) => ({
+            ...prev,
+            sections: {
+                ...prev.sections,
+                [sectionKey]: {
+                    ...prev.sections[sectionKey],
+                    approved: checked
+                }
+            }
+        }))
     }
 
     const handleRemarksChange = (
         remarks: string
     ) => {
         setReviewedProposal((prev) => ({
-                ...prev,
-                remarks,
-            }))
+            ...prev,
+            remarks: remarks || null,
+        }))
     }
 
     const handleSubmit = useCallback((approved: boolean) => {
-        onSubmit(approved, reviewedProposal)
+        onSubmit(approved, {...reviewedProposal, approved})
     }, [onSubmit, reviewedProposal])
 
     const renderSection = (
-        sectionType: ProposalSectionName,
         sectionKey: string,
         section: ProposalSection
     ) => (
-        <div key={`${sectionType}-${sectionKey}`} className="flex items-start space-x-2 mb-2">
+        <div key={sectionKey} className="flex items-start space-x-2 mb-2">
             <Checkbox
-                id={`${sectionType}-${sectionKey}`}
+                id={sectionKey}
                 checked={section.approved}
-                onCheckedChange={(checked) => handleCheckboxChange(sectionType, sectionKey, checked as boolean)}
+                onCheckedChange={(checked) => handleCheckboxChange(sectionKey, checked as boolean)}
                 className="border border-black/10 data-[state=checked]:text-[var(--primary)]"
             />
             <div className="grid gap-1.5 leading-none">
                 <label
-                    htmlFor={`${sectionType}-${sectionKey}`}
+                    htmlFor={sectionKey}
                     className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                 >
                     {section.title}
@@ -100,7 +101,7 @@ export function ProposalViewer({
             <CardContent>
                 <ScrollArea className="h-[60vh] pr-4">
                     <div className="space-y-6">
-                        {ProposalItem({ title: 'Sections', proposalItemKey: ProposalSectionName.Sections, proposal: reviewedProposal, renderSection })}
+                        {ProposalItem({ title: 'Sections', proposal: reviewedProposal, renderSection })}
                         <div className="space-y-2">
                             <label htmlFor="remarks" className="text-sm font-medium">
                                 Additional Remarks
@@ -110,7 +111,7 @@ export function ProposalViewer({
                                 placeholder="Enter any additional feedback or remarks..."
                                 className="min-h-[100px] border-black/10 resize-none"
                                 onChange={(e) => handleRemarksChange(e.target.value)}
-                                value={reviewedProposal.remarks}
+                                value={reviewedProposal.remarks || ''}
                             />
                         </div>
                     </div>

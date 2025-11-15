@@ -10,6 +10,9 @@ import random
 import string
 from copilotkit.langchain import copilotkit_customize_config, copilotkit_emit_state
 
+# Import Pydantic model for AG-UI support
+from state import Section
+
 @tool
 def WriteSection(title: str, content: str, section_number: int, footer: str = ""): # pylint: disable=invalid-name,unused-argument
     """Write a section with content and footer containing references"""
@@ -38,13 +41,13 @@ async def section_writer(research_query, section_title, idx, state):
     await copilotkit_emit_state(config, state)
 
     section_id = generate_random_id()
-    section = {
-        "title": section_title,
-        "content": "",
-        "footer": "",
-        "idx": idx,
-        "id": section_id,
-    }
+    # Create Pydantic Section object for AG-UI
+    section = Section(
+        idx=idx,
+        title=section_title,
+        content="",
+        footer=""
+    )
 
     content_state = {
         "state_key": f"section_stream.content.{idx}.{section_id}.{section_title}",
@@ -64,7 +67,9 @@ async def section_writer(research_query, section_title, idx, state):
 
     outline = state.get("outline", {})
     sources = state.get("sources").values()
-    section_exists = True if section['idx'] in [sec['idx'] for sec in state['sections']] else False
+    # Check if section exists (handle both Section objects and dicts)
+    existing_indices = [sec.idx if isinstance(sec, Section) else sec['idx'] for sec in state.get('sections', [])]
+    section_exists = section.idx in existing_indices
 
     if not section_exists:
         # Define the system and user prompts
@@ -120,7 +125,12 @@ async def section_writer(research_query, section_title, idx, state):
         }]
     else:
         # get the current content of the section we want to update
-        current_section_state = state['sections'][section['idx']]
+        current_section_state = state['sections'][section.idx]
+        # Handle both Section objects and dicts
+        current_title = current_section_state.title if isinstance(current_section_state, Section) else current_section_state['title']
+        current_content = current_section_state.content if isinstance(current_section_state, Section) else current_section_state['content']
+        current_footer = current_section_state.footer if isinstance(current_section_state, Section) else current_section_state['footer']
+
         prompt = [{
             "role": "system",
             "content": (
@@ -128,9 +138,9 @@ async def section_writer(research_query, section_title, idx, state):
                 "Use the given section and only make changes that were requested by the user."
                 "Do not change the title of a section unless explicitly requested by the user."
                 "The given section:"
-                f"Title : {current_section_state['title']}\n"
-                f"Content : {current_section_state['content']}\n"
-                f"Footer : {current_section_state['footer']}\n\n"
+                f"Title : {current_title}\n"
+                f"Content : {current_content}\n"
+                f"Footer : {current_footer}\n\n"
                 "Now use the user's request to alter the given section."
                 f"The user request : {[message_content for message_type, message_content in state['messages'].items() if message_type == 'HumanMessage'][-1]}"
             )
@@ -159,12 +169,13 @@ async def section_writer(research_query, section_title, idx, state):
         ai_message = cast(AIMessage, response)
         if ai_message.tool_calls:
             if ai_message.tool_calls[0]["name"] == "WriteSection":
-                section["title"] = ai_message.tool_calls[0]["args"].get("title", "")
-                section["content"] = ai_message.tool_calls[0]["args"].get("content", "")
-                section["footer"] = ai_message.tool_calls[0]["args"].get("footer", "")
+                # Update Pydantic Section object
+                section.title = ai_message.tool_calls[0]["args"].get("title", section.title)
+                section.content = ai_message.tool_calls[0]["args"].get("content", "")
+                section.footer = ai_message.tool_calls[0]["args"].get("footer", "")
 
         if section_exists:
-            state["sections"][section['idx']] = section
+            state["sections"][section.idx] = section
         else:
             state["sections"].append(section)
 
