@@ -131,26 +131,43 @@ async def section_writer(research_query, section_title, idx, state):
         current_content = current_section_state.content if isinstance(current_section_state, Section) else current_section_state['content']
         current_footer = current_section_state.footer if isinstance(current_section_state, Section) else current_section_state['footer']
 
+        # Extract and sanitize the last human message
+        # Note: state['messages'] is converted to a dict format in tool_node
+        user_request = ""
+        if isinstance(state['messages'], dict):
+            # Get the last human message from the dict format
+            human_messages = [msg for msg_type, msg in state['messages'].items() if msg_type == 'HumanMessage']
+            if human_messages:
+                user_request = str(human_messages[-1])
+        
+        # Sanitize and truncate user request to prevent prompt injection
+        # Remove any attempt to inject system instructions
+        user_request = user_request.replace("</s>", "").replace("<|im_end|>", "").replace("<|endoftext|>", "")
+        # Truncate to reasonable length (e.g., 2000 characters)
+        max_length = 2000
+        if len(user_request) > max_length:
+            user_request = user_request[:max_length] + "...[truncated]"
+
         prompt = [{
             "role": "system",
             "content": (
-                "You are an AI assistant that makes changes to a given section of a research report in markdown format."
-                "Use the given section and only make changes that were requested by the user."
-                "Do not change the title of a section unless explicitly requested by the user."
-                "The given section:"
-                f"Title : {current_title}\n"
-                f"Content : {current_content}\n"
-                f"Footer : {current_footer}\n\n"
-                "Now use the user's request to alter the given section."
-                f"The user request : {[message_content for message_type, message_content in state['messages'].items() if message_type == 'HumanMessage'][-1]}"
+                "You are an AI assistant that makes changes to a given section of a research report in markdown format. "
+                "Use the given section and only make changes that were requested by the user. "
+                "Do not change the title of a section unless explicitly requested by the user.\n\n"
+                "The given section:\n"
+                f"Title: {current_title}\n"
+                f"Content: {current_content}\n"
+                f"Footer: {current_footer}\n\n"
+                "Now use the user's request to alter the given section.\n"
+                f"The user request: {user_request}"
             )
         }, {
             "role": "user",
             "content": (
-                "You are an AI assistant that has completed the task of creating a specific section of a research report, now your primary goal is to make changes to the section to fit the users request."
-                "Edit the given section of the report using the write_section tool. Make sure to only make changes to the section that the user requested."
+                "You are an AI assistant that has completed the task of creating a specific section of a research report, now your primary goal is to make changes to the section to fit the users request. "
+                "Edit the given section of the report using the write_section tool. Make sure to only make changes to the section that the user requested. "
                 "Before making changes to the given section of the report identify the location (heading/subheading/bullet point/etc.) where the user's request needs to be placed in the report, and then only make changes to this location and keep everything else the same. "
-                "Use appropriate markdown formatting to create a professional academic report section."
+                "Use appropriate markdown formatting to create a professional academic report section. "
                 "Do not alter the format of the given section unless explicitly instructed by the user."
             )
         }]

@@ -7,6 +7,8 @@
 # or exports it for distribution.
 
 set -e
+set -u  # Treat unset variables as errors
+set -o pipefail  # Fail if any command in a pipeline fails
 
 PLUGIN_NAME="copilotkit-expert"
 VERSION="1.0.0"
@@ -28,6 +30,7 @@ PLUGIN_FILES=(
     "COPILOTKIT_PLUGIN.md"
     "MCP_SETUP.md"
     "QUICKSTART.md"
+    ".claude-plugin/plugin.json"
 )
 
 # Function to print colored output
@@ -101,7 +104,7 @@ verify_plugin() {
 
 # Function to install plugin to target directory
 install_plugin() {
-    local target_dir="$1"
+    local target_dir="${1:-}"
 
     if [ -z "$target_dir" ]; then
         print_error "Target directory not specified"
@@ -114,14 +117,19 @@ install_plugin() {
         exit 1
     fi
 
+    # Resolve absolute path to prevent path manipulation
+    target_dir="$(cd "$target_dir" && pwd)"
+
     print_info "Installing CopilotKit Expert Plugin to: $target_dir"
 
-    # Create .claude directory structure
+    # Create .claude directory structure with safe path handling
     mkdir -p "${target_dir}/.claude/skills"
     mkdir -p "${target_dir}/.claude/commands"
+    mkdir -p "${target_dir}/.claude/.claude-plugin"
 
-    # Copy plugin files
-    local current_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    # Copy plugin files with proper quoting
+    local current_dir
+    current_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
     for file in "${PLUGIN_FILES[@]}"; do
         local source="${current_dir}/${file}"
@@ -150,7 +158,7 @@ install_plugin() {
 
 # Function to export plugin as standalone package
 export_plugin() {
-    local output_dir="$1"
+    local output_dir="${1:-}"
 
     if [ -z "$output_dir" ]; then
         print_error "Output directory not specified"
@@ -160,12 +168,14 @@ export_plugin() {
 
     print_info "Exporting CopilotKit Expert Plugin to: $output_dir"
 
-    # Create output directory structure
+    # Create output directory structure with safe path handling
     mkdir -p "${output_dir}/.claude/skills"
     mkdir -p "${output_dir}/.claude/commands"
+    mkdir -p "${output_dir}/.claude/.claude-plugin"
 
-    # Copy plugin files
-    local current_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    # Copy plugin files with proper quoting
+    local current_dir
+    current_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
     for file in "${PLUGIN_FILES[@]}"; do
         local source="${current_dir}/${file}"
@@ -248,26 +258,30 @@ EOF
 }
 
 # Main command dispatcher
-case "${1:-}" in
-    install)
-        install_plugin "$2"
-        ;;
-    export)
-        export_plugin "$2"
-        ;;
-    verify)
-        verify_plugin
-        ;;
-    help|--help|-h)
-        show_usage
-        ;;
-    *)
-        if [ -z "${1:-}" ]; then
+main() {
+    case "${1:-}" in
+        install)
+            install_plugin "${2:-}"
+            ;;
+        export)
+            export_plugin "${2:-}"
+            ;;
+        verify)
+            verify_plugin
+            ;;
+        help|--help|-h)
             show_usage
-        else
-            print_error "Unknown command: $1"
-            show_usage
-            exit 1
-        fi
-        ;;
-esac
+            ;;
+        *)
+            if [ -z "${1:-}" ]; then
+                show_usage
+            else
+                print_error "Unknown command: $1"
+                show_usage
+                exit 1
+            fi
+            ;;
+    esac
+}
+
+main "$@"
