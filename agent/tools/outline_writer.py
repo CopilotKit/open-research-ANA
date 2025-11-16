@@ -10,6 +10,9 @@ from langchain_openai import ChatOpenAI
 from copilotkit.langchain import copilotkit_emit_state
 from langchain_core.runnables import RunnableConfig
 
+# Import Pydantic models for AG-UI support
+from state import Proposal, ProposalSection
+
 
 # "description": "The main sections that compose this research",  # This is a description on what are "sections"
 # Define proposal structure keys at module level for single source of truth
@@ -46,16 +49,27 @@ async def outline_writer(research_query, state):
     if current_proposal:
         approved_sections = ""
         non_approved_sections = ""
-        for k, v in current_proposal['sections'].items():
-            if isinstance(v, dict) and v.get('approved'):
+        # Handle both Pydantic Proposal and dict for backward compatibility
+        sections = current_proposal.sections if isinstance(current_proposal, Proposal) else current_proposal.get('sections', {})
+        for k, v in sections.items():
+            # Handle both ProposalSection objects and dicts
+            if isinstance(v, ProposalSection):
+                if v.approved:
+                    approved_sections += f"\"{v.title}\", "
+                else:
+                    non_approved_sections += f"\"{v.title}\", "
+            elif isinstance(v, dict) and v.get('approved'):
                 approved_sections += f"\"{v['title']}\", "
             else:
-                non_approved_sections += f"\"{v['title']}\", "
+                non_approved_sections += f"\"{v.get('title', '')}\", "
         # Remove trailing ", "
         approved_sections = approved_sections.rstrip(", ")
         non_approved_sections = non_approved_sections.rstrip(", ")
+
+        # Convert Proposal to dict for JSON serialization
+        proposal_data = current_proposal.model_dump() if isinstance(current_proposal, Proposal) else current_proposal
         current_proposal_text = (
-            f"Current proposal:\n{json.dumps(current_proposal, indent=2)}\n\n"
+            f"Current proposal:\n{json.dumps(proposal_data, indent=2)}\n\n"
             "Consider the user's remarks when drafting the revised proposal and generating new sections. ")
         if approved_sections:
             current_proposal_text += (
@@ -114,16 +128,28 @@ async def outline_writer(research_query, state):
             state["logs"][i]["done"] = True
         await copilotkit_emit_state(config, state)
 
-        proposal = json.loads(response)
+        proposal_dict = json.loads(response)
 
         # Validate proposal structure using module-level keys
-        if not all(key in proposal for key in PROPOSAL_KEYS):
+        if not all(key in proposal_dict for key in PROPOSAL_KEYS):
             raise ValueError(f"Missing required keys in proposal. Required: {PROPOSAL_KEYS}")
 
-        # Add timestamp to proposal
-        proposal["timestamp"] = datetime.now().isoformat()
-        proposal["approved"] = False
-        proposal["remarks"] = ""   # Reset user remarks if the model included them in the new proposal
+        # Convert dict sections to Pydantic ProposalSection objects
+        sections = {}
+        for key, section_data in proposal_dict.get("sections", {}).items():
+            if isinstance(section_data, dict):
+                sections[key] = ProposalSection(
+                    title=section_data.get("title", ""),
+                    description=section_data.get("description", ""),
+                    approved=section_data.get("approved", False)
+                )
+
+        # Create Pydantic Proposal object for AG-UI
+        proposal = Proposal(
+            sections=sections,
+            approved=False,
+            remarks=None  # Reset user remarks if the model included them in the new proposal
+        )
 
         tool_msg = f"Generated the following outline proposal:\n{response}"
         state["proposal"] = proposal
@@ -134,15 +160,13 @@ async def outline_writer(research_query, state):
 
         return state, tool_msg
     except Exception as e:
-        # Create fallback structure using same keys
-        fallback = {
-            key: [] for key in PROPOSAL_KEYS
-        }
-        fallback.update({
-            "timestamp": datetime.now().isoformat(),
-            "error": str(e)
-        })
-        state["proposal"] = fallback
+        # Create fallback Proposal object for AG-UI
+        fallback_proposal = Proposal(
+            sections={},
+            approved=False,
+            remarks=f"Error generating proposal: {str(e)}"
+        )
+        state["proposal"] = fallback_proposal
 
         # Clear logs
         state["logs"] = []

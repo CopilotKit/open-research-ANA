@@ -4,6 +4,9 @@
   "extends": [
     "config:recommended"
   ],
+  "schedule": [
+    "every weekend"
+  ],
   "poetry": {
     "enabled": true
   },
@@ -29,13 +32,24 @@
     {
       "enabled": true,
       "matchPackageNames": [
-        "/^@copilotkit/",
-        "/^copilotkit/"
-      ],
-      "labels": [
+        "@copilotkit/react-core",
+        "@copilotkit/react-ui",
+        "@copilotkit/runtime",
         "copilotkit"
       ],
-      "groupName": "CopilotKit dependencies"
+      "labels": [
+        "copilotkit",
+        "auto-sync"
+      ],
+      "groupName": "CopilotKit dependencies",
+      "automerge": false,
+      "schedule": [
+        "every weekend"
+      ],
+      "prPriority": 10,
+      "commitMessagePrefix": "🔄 [Auto-sync]",
+      "prTitle": "🔄 Synchronize CopilotKit versions (backend + frontend)",
+      "prBodyTemplate": "This PR automatically synchronizes CopilotKit dependencies across backend and frontend to maintain version alignment.\n\n### Updated Packages\n{{{changelogBody}}}\n\n### Version Alignment\n- Backend: `copilotkit` (Python SDK) in `agent/requirements.txt`\n- Frontend: `@copilotkit/runtime`, `@copilotkit/react-core`, `@copilotkit/react-ui` in `frontend/package.json`\n\n**Note**: Qodo Merge will automatically verify version compatibility before merge.\n\n---\n{{{body}}}"
     }
   ]
 }

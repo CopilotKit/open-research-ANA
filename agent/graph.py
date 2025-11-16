@@ -10,7 +10,7 @@ from langchain_core.runnables import RunnableConfig
 from copilotkit.langchain import copilotkit_emit_state, copilotkit_customize_config
 from langchain_core.tools import tool
 
-from state import ResearchState
+from state import ResearchState, Proposal, ProposalSection, Section, Source, Log
 from config import Config
 from tools.tavily_search import tavily_search
 from tools.tavily_extract import tavily_extract
@@ -189,21 +189,25 @@ class ResearchAgent:
     async def process_feedback_node(state: ResearchState, config: RunnableConfig):
         """
         Node for retrieving and processing feedback from the user via the frontend.
+        AG-UI will automatically generate a form from the Proposal Pydantic model.
         """
 
-        # Interrupt the graph and wait for feedback. CopilotKit will render a form and wait for the user to submit it on
-        # the frontend.
-        reviewed_outline = interrupt(state.get("proposal", {}))
+        # Interrupt the graph and wait for feedback. AG-UI will render a form based on the Proposal model
+        # and wait for the user to submit it on the frontend.
+        reviewed_proposal: Proposal = interrupt(state.proposal)
 
         # Process the feedback we have in reviewed_proposal.
-        if reviewed_outline.get("approved"):
-            outline = {k: {'title': v['title'], 'description': v['description']} for k, v in
-                        reviewed_outline.get("sections", {}).items()
-                        if isinstance(v, dict) and v.get('approved')}
+        if reviewed_proposal.approved:
+            # Extract approved sections using Pydantic model attributes
+            outline = {
+                k: {'title': v.title, 'description': v.description}
+                for k, v in reviewed_proposal.sections.items()
+                if v.approved
+            }
             state['outline'] = outline
 
         # Update proposal and commit the state. Add a system message so the LLM knows that this interaction took place.
-        state["proposal"] = reviewed_outline
+        state["proposal"] = reviewed_proposal
         state["messages"] = [SystemMessage(content="User has reviewed the proposal, please process their feedback and act accordingly.")]
         return Command(goto="call_model_node", update={**state})
 
